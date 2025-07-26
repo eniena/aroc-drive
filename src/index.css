@@ -2,39 +2,57 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* Moroccan-inspired design system for Tsharaki (تشاركي)
+All colors MUST be HSL. Arabic RTL support included.
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Moroccan color palette */
+    --background: 30 25% 97%;
+    --foreground: 20 14% 20%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 20 14% 20%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 20 14% 20%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Moroccan red as primary */
+    --primary: 355 65% 55%;
+    --primary-foreground: 0 0% 98%;
+    --primary-glow: 355 85% 65%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Warm sand secondary */
+    --secondary: 35 35% 88%;
+    --secondary-foreground: 20 14% 20%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted earth tones */
+    --muted: 35 20% 90%;
+    --muted-foreground: 25 8% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Moroccan blue accent */
+    --accent: 210 75% 60%;
+    --accent-foreground: 0 0% 98%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 35 15% 85%;
+    --input: 35 15% 85%;
+    --ring: 355 65% 55%;
+
+    /* Moroccan gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(355, 65%, 55%), hsl(355, 85%, 65%));
+    --gradient-sunset: linear-gradient(135deg, hsl(25, 85%, 60%), hsl(355, 65%, 55%));
+    --gradient-sand: linear-gradient(180deg, hsl(35, 35%, 88%), hsl(35, 25%, 82%));
+    
+    /* Elegant shadows */
+    --shadow-moroccan: 0 10px 30px -10px hsl(355 65% 55% / 0.3);
+    --shadow-warm: 0 4px 20px -4px hsl(25 50% 40% / 0.2);
+    
+    /* Smooth animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
     --radius: 0.5rem;
 
@@ -100,6 +118,50 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-arabic;
+    direction: rtl;
+  }
+
+  /* Arabic font support */
+  .font-arabic {
+    font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  /* RTL support utilities */
+  .rtl {
+    direction: rtl;
+  }
+
+  .ltr {
+    direction: ltr;
+  }
+
+  /* Custom components */
+  .hero-gradient {
+    background: var(--gradient-sunset);
+  }
+
+  .card-moroccan {
+    background: hsl(var(--card));
+    box-shadow: var(--shadow-warm);
+    border: 1px solid hsl(var(--border));
+    transition: var(--transition-smooth);
+  }
+
+  .card-moroccan:hover {
+    box-shadow: var(--shadow-moroccan);
+    transform: translateY(-2px);
+  }
+
+  .btn-moroccan {
+    background: var(--gradient-primary);
+    color: hsl(var(--primary-foreground));
+    box-shadow: var(--shadow-warm);
+    transition: var(--transition-smooth);
+  }
+
+  .btn-moroccan:hover {
+    box-shadow: var(--shadow-moroccan);
+    transform: translateY(-1px);
   }
 }
