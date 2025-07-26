@@ -22,10 +22,16 @@ interface Trip {
   total_seats: number;
   car_model?: string;
   notes?: string;
+  driver_id: string;
   users?: {
     name: string;
     rating?: number;
   };
+}
+
+interface UserBooking {
+  trip_id: string;
+  passenger_id: string;
 }
 
 export default function Home() {
@@ -36,6 +42,43 @@ export default function Home() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
+  const [userBookings, setUserBookings] = useState<UserBooking[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  // Fetch user's current bookings and user ID
+  useEffect(() => {
+    if (user) {
+      fetchUserData();
+    }
+  }, [user]);
+
+  const fetchUserData = async () => {
+    if (!user) return;
+
+    try {
+      // Get current user's database ID
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (userError) throw userError;
+      setCurrentUserId(userData.id);
+
+      // Get user's bookings
+      const { data: bookingsData, error: bookingsError } = await supabase
+        .from('bookings')
+        .select('trip_id, passenger_id')
+        .eq('passenger_id', userData.id)
+        .eq('status', 'confirmed');
+
+      if (bookingsError) throw bookingsError;
+      setUserBookings(bookingsData || []);
+    } catch (error: any) {
+      console.error('Error fetching user data:', error);
+    }
+  };
 
   const searchTrips = async () => {
     if (!fromCity || !toCity || !date) {
@@ -86,6 +129,68 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const bookTrip = async (tripId: string) => {
+    if (!user || !currentUserId) {
+      toast({
+        title: "خطأ في الحجز",
+        description: "يجب تسجيل الدخول للحجز",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if user already booked this trip
+    const isAlreadyBooked = userBookings.some(booking => booking.trip_id === tripId);
+    if (isAlreadyBooked) {
+      toast({
+        title: "حجز مكرر",
+        description: "لقد قمت بحجز هذه الرحلة مسبقاً",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .insert({
+          trip_id: tripId,
+          passenger_id: currentUserId,
+          status: 'confirmed',
+          seats_booked: 1
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "تم الحجز بنجاح",
+        description: "تم حجز مقعدك في الرحلة",
+      });
+
+      // Refresh user data and search results
+      fetchUserData();
+      searchTrips();
+    } catch (error: any) {
+      toast({
+        title: "خطأ في الحجز",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const isUserDriver = (trip: Trip) => {
+    return trip.driver_id === currentUserId;
+  };
+
+  const isAlreadyBooked = (tripId: string) => {
+    return userBookings.some(booking => booking.trip_id === tripId);
+  };
+
+  const isTripInPast = (departureTime: string) => {
+    return new Date(departureTime) < new Date();
   };
 
   const formatTime = (datetime: string) => {
@@ -261,9 +366,31 @@ export default function Home() {
                             </div>
                           </div>
 
-                          <Button variant="moroccan" className="font-arabic">
-                            احجز الآن
-                          </Button>
+                          {isUserDriver(trip) ? (
+                            <Badge variant="outline" className="font-arabic">
+                              رحلتك
+                            </Badge>
+                          ) : isAlreadyBooked(trip.id) ? (
+                            <Badge variant="secondary" className="font-arabic">
+                              محجوز
+                            </Badge>
+                          ) : isTripInPast(trip.departure_time) ? (
+                            <Badge variant="outline" className="font-arabic">
+                              منتهي
+                            </Badge>
+                          ) : trip.available_seats === 0 ? (
+                            <Badge variant="outline" className="font-arabic">
+                              مكتمل
+                            </Badge>
+                          ) : (
+                            <Button 
+                              variant="moroccan" 
+                              className="font-arabic"
+                              onClick={() => bookTrip(trip.id)}
+                            >
+                              احجز الآن
+                            </Button>
+                          )}
                         </div>
                       </div>
 

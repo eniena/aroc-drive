@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { User, Phone, Mail, Car, Star, Activity, Edit, Save, X } from 'lucide-react';
+import { User, Phone, Mail, Car, Star, Activity, Edit, Save, X, Calendar, Clock, MapPin, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -29,11 +29,28 @@ interface ActivityLog {
   created_at: string;
 }
 
+interface Booking {
+  id: string;
+  trip_id: string;
+  status: string;
+  created_at: string;
+  trips: {
+    from_location: string;
+    to_location: string;
+    departure_time: string;
+    price_per_seat: number;
+    users: {
+      name: string;
+    };
+  };
+}
+
 export default function Profile() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({
@@ -46,6 +63,7 @@ export default function Profile() {
     if (user) {
       fetchProfile();
       fetchActivityLogs();
+      fetchBookings();
     }
   }, [user]);
 
@@ -97,6 +115,46 @@ export default function Profile() {
     }
   };
 
+  const fetchBookings = async () => {
+    if (!user) return;
+
+    try {
+      // First get user ID from users table
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (userError) throw userError;
+
+      // Then get bookings with trip details
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          trips (
+            from_location,
+            to_location,
+            departure_time,
+            price_per_seat,
+            users (
+              name
+            )
+          )
+        `)
+        .eq('passenger_id', userData.id)
+        .eq('status', 'confirmed')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setBookings(data || []);
+    } catch (error: any) {
+      console.error('Error fetching bookings:', error);
+    }
+  };
+
   const updateProfile = async () => {
     if (!user || !profile) return;
 
@@ -128,10 +186,49 @@ export default function Profile() {
     }
   };
 
+  const cancelBooking = async (bookingId: string) => {
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({ status: 'cancelled' })
+        .eq('id', bookingId);
+
+      if (error) throw error;
+
+      toast({
+        title: "تم إلغاء الحجز",
+        description: "تم إلغاء حجزك بنجاح",
+      });
+
+      fetchBookings();
+    } catch (error: any) {
+      toast({
+        title: "خطأ في الإلغاء",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('ar-MA', {
       year: 'numeric',
       month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  const formatTime = (datetime: string) => {
+    return new Date(datetime).toLocaleTimeString('ar-MA', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const formatDateTime = (datetime: string) => {
+    return new Date(datetime).toLocaleDateString('ar-MA', {
+      weekday: 'short',
+      month: 'short',
       day: 'numeric',
     });
   };
@@ -199,6 +296,66 @@ export default function Profile() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Profile Information */}
             <div className="lg:col-span-2 space-y-6">
+              {/* Bookings Section */}
+              <Card className="card-moroccan">
+                <CardHeader>
+                  <CardTitle className="font-arabic">حجوزاتي</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {bookings.length === 0 ? (
+                    <p className="text-muted-foreground text-center font-arabic py-8">لا توجد حجوزات حتى الآن</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {bookings.map((booking) => (
+                        <div key={booking.id} className="border border-border rounded-lg p-4 space-y-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <MapPin className="h-4 w-4 text-primary" />
+                                <span className="font-semibold font-arabic">
+                                  {booking.trips.from_location} ← {booking.trips.to_location}
+                                </span>
+                              </div>
+                              
+                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-4 w-4" />
+                                  <span className="font-arabic">{formatDateTime(booking.trips.departure_time)}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Clock className="h-4 w-4" />
+                                  <span className="font-arabic">{formatTime(booking.trips.departure_time)}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <User className="h-4 w-4" />
+                                  <span className="font-arabic">{booking.trips.users.name}</span>
+                                </div>
+                              </div>
+                              
+                              <div className="mt-2">
+                                <span className="text-lg font-bold text-primary font-arabic">
+                                  {booking.trips.price_per_seat} درهم
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => cancelBooking(booking.id)}
+                              className="font-arabic text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              إلغاء الحجز
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
               <Card className="card-moroccan">
                 <CardHeader>
                   <div className="flex items-center justify-between">
