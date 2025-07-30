@@ -237,6 +237,7 @@ export default function MyTrips() {
                           <Button
                             variant="outline"
                             size="sm"
+                            onClick={() => navigate(`/edit-trip/${trip.id}`)}
                             className="font-arabic"
                             disabled={isExpired}
                           >
