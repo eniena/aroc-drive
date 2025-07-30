@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Search, MapPin, Calendar, User, Car, Clock, DollarSign, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 import { moroccanCities } from '@/data/moroccanCities';
 import { toast } from '@/hooks/use-toast';
 import heroImage from '@/assets/hero-morocco.jpg';

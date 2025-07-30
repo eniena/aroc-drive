@@ -149,19 +149,32 @@ export default function Chat() {
       const { data: messagesData, error: messagesError } = await supabase
         .from('messages')
         .select(`
-          *,
-          sender:users!messages_sender_id_fkey (
-            name
-          )
+          id,
+          content,
+          sender_id,
+          created_at,
+          booking_id
         `)
         .eq('booking_id', bookingId)
         .order('created_at', { ascending: true });
 
       if (messagesError) throw messagesError;
 
+      // Get sender names separately to avoid complex joins
+      const senderIds = [...new Set(messagesData?.map(msg => msg.sender_id) || [])];
+      const { data: senderData } = await supabase
+        .from('users')
+        .select('id, name')
+        .in('id', senderIds);
+
+      const senderMap = senderData?.reduce((acc, user) => {
+        acc[user.id] = user.name;
+        return acc;
+      }, {} as Record<string, string>) || {};
+
       const formattedMessages = messagesData?.map(msg => ({
         ...msg,
-        sender_name: (msg as any).sender?.name
+        sender_name: senderMap[msg.sender_id] || 'مستخدم'
       })) || [];
 
       setMessages(formattedMessages);
@@ -185,11 +198,11 @@ export default function Chat() {
     try {
       const { error } = await supabase
         .from('messages')
-        .insert([{
+        .insert({
           booking_id: bookingId,
           sender_id: currentUserId,
           content: newMessage.trim()
-        }]);
+        });
 
       if (error) throw error;
 

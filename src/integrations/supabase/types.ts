@@ -41,6 +41,45 @@ export type Database = {
         }
         Relationships: []
       }
+      appointments: {
+        Row: {
+          created_at: string
+          date: string
+          email: string
+          id: string
+          notes: string | null
+          service: string
+          status: string | null
+          time: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          email: string
+          id?: string
+          notes?: string | null
+          service: string
+          status?: string | null
+          time: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          email?: string
+          id?: string
+          notes?: string | null
+          service?: string
+          status?: string | null
+          time?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       bookings: {
         Row: {
           created_at: string
@@ -187,6 +226,58 @@ export type Database = {
         }
         Relationships: []
       }
+      messages: {
+        Row: {
+          booking_id: string
+          content: string
+          created_at: string | null
+          id: string
+          receiver_id: string | null
+          sender_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          booking_id: string
+          content: string
+          created_at?: string | null
+          id?: string
+          receiver_id?: string | null
+          sender_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          booking_id?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          receiver_id?: string | null
+          sender_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -231,6 +322,8 @@ export type Database = {
           from_location: string
           gender_preference: Database["public"]["Enums"]["gender_preference"]
           id: string
+          is_request: boolean | null
+          meeting_point: string | null
           notes: string | null
           price_per_seat: number
           to_location: string
@@ -247,6 +340,8 @@ export type Database = {
           from_location: string
           gender_preference?: Database["public"]["Enums"]["gender_preference"]
           id?: string
+          is_request?: boolean | null
+          meeting_point?: string | null
           notes?: string | null
           price_per_seat: number
           to_location: string
@@ -263,6 +358,8 @@ export type Database = {
           from_location?: string
           gender_preference?: Database["public"]["Enums"]["gender_preference"]
           id?: string
+          is_request?: boolean | null
+          meeting_point?: string | null
           notes?: string | null
           price_per_seat?: number
           to_location?: string
@@ -287,6 +384,7 @@ export type Database = {
           gender: Database["public"]["Enums"]["gender_type"] | null
           id: string
           name: string
+          phone: string | null
           phone_number: string | null
           profile_picture: string | null
           rating: number | null
@@ -302,6 +400,7 @@ export type Database = {
           gender?: Database["public"]["Enums"]["gender_type"] | null
           id?: string
           name: string
+          phone?: string | null
           phone_number?: string | null
           profile_picture?: string | null
           rating?: number | null
@@ -317,6 +416,7 @@ export type Database = {
           gender?: Database["public"]["Enums"]["gender_type"] | null
           id?: string
           name?: string
+          phone?: string | null
           phone_number?: string | null
           profile_picture?: string | null
           rating?: number | null
