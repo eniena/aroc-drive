@@ -226,6 +226,36 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_locations: {
+        Row: {
+          created_at: string
+          driver_id: string
+          id: string
+          latitude: number
+          longitude: number
+          trip_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          id?: string
+          latitude: number
+          longitude: number
+          trip_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          id?: string
+          latitude?: number
+          longitude?: number
+          trip_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           booking_id: string
@@ -326,6 +356,7 @@ export type Database = {
           meeting_point: string | null
           notes: string | null
           price_per_seat: number
+          status: string | null
           to_location: string
           total_seats: number
           updated_at: string
@@ -344,6 +375,7 @@ export type Database = {
           meeting_point?: string | null
           notes?: string | null
           price_per_seat: number
+          status?: string | null
           to_location: string
           total_seats: number
           updated_at?: string
@@ -362,6 +394,7 @@ export type Database = {
           meeting_point?: string | null
           notes?: string | null
           price_per_seat?: number
+          status?: string | null
           to_location?: string
           total_seats?: number
           updated_at?: string

@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Car, MapPin, Calendar, Clock, Users, DollarSign, Plus, Edit, Trash2 } from 'lucide-react';
+import { Car, MapPin, Calendar, Clock, Users, DollarSign, Plus, Edit, Trash2, Map } from 'lucide-react';
+import LocationMap from '@/components/LocationMap';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -19,6 +20,7 @@ interface Trip {
   car_model?: string;
   car_plate?: string;
   notes?: string;
+  status?: string;
   created_at: string;
 }
 
@@ -27,6 +29,7 @@ export default function MyTrips() {
   const navigate = useNavigate();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showLocationMap, setShowLocationMap] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -112,6 +115,15 @@ export default function MyTrips() {
 
   const isPastTrip = (datetime: string) => {
     return new Date(datetime) < new Date();
+  };
+
+  const isOngoingTrip = (trip: Trip) => {
+    const now = new Date();
+    const departureTime = new Date(trip.departure_time);
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+    const twoHoursLater = new Date(departureTime.getTime() + 2 * 60 * 60 * 1000);
+    
+    return trip.status === 'en cours' || (now >= oneHourAgo && now <= twoHoursLater);
   };
 
   if (!user) {
@@ -234,6 +246,17 @@ export default function MyTrips() {
                         </div>
 
                         <div className="flex items-center gap-2">
+                          {isOngoingTrip(trip) && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setShowLocationMap(showLocationMap === trip.id ? null : trip.id)}
+                              className="font-arabic"
+                            >
+                              <Map className="mr-2 h-4 w-4" />
+                              {showLocationMap === trip.id ? 'إخفاء الخريطة' : 'عرض الخريطة'}
+                            </Button>
+                          )}
                           <Button
                             variant="outline"
                             size="sm"
@@ -255,6 +278,18 @@ export default function MyTrips() {
                           </Button>
                         </div>
                       </div>
+                      
+                      {/* Location Map */}
+                      {showLocationMap === trip.id && isOngoingTrip(trip) && (
+                        <div className="mt-4 pt-4 border-t border-border">
+                          <h4 className="font-semibold mb-2 font-arabic">تتبع الموقع المباشر</h4>
+                          <LocationMap
+                            tripId={trip.id}
+                            isDriver={true}
+                            driverName={user?.email || 'السائق'}
+                          />
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 );
