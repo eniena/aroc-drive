@@ -4,8 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Search, MapPin, Calendar, User, Car, Clock, DollarSign, Users } from 'lucide-react';
+import { Search, MapPin, Calendar, User, Car, Clock, DollarSign, Users, MessageCircle, Phone } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -37,6 +38,7 @@ interface UserBooking {
 
 export default function Home() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [fromCity, setFromCity] = useState('');
   const [toCity, setToCity] = useState('');
   const [date, setDate] = useState('');
@@ -45,6 +47,8 @@ export default function Home() {
   const [searching, setSearching] = useState(false);
   const [userBookings, setUserBookings] = useState<UserBooking[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [selectedSeats, setSelectedSeats] = useState<{[key: string]: number}>({});
+  const [bookingDialogOpen, setBookingDialogOpen] = useState<string | null>(null);
 
   // Fetch user's current bookings and user ID
   useEffect(() => {
@@ -132,7 +136,7 @@ export default function Home() {
     }
   };
 
-  const bookTrip = async (tripId: string) => {
+  const bookTrip = async (tripId: string, selectedSeats: number = 1) => {
     if (!user || !currentUserId) {
       toast({
         title: "خطأ في الحجز",
@@ -153,6 +157,17 @@ export default function Home() {
       return;
     }
 
+    // Check if enough seats are available
+    const trip = trips.find(t => t.id === tripId);
+    if (!trip || trip.available_seats < selectedSeats) {
+      toast({
+        title: "خطأ في الحجز",
+        description: "عدد المقاعد المطلوبة غير متوفر",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('bookings')
@@ -160,14 +175,14 @@ export default function Home() {
           trip_id: tripId,
           passenger_id: currentUserId,
           status: 'confirmed',
-          seats_booked: 1
+          seats_booked: selectedSeats
         });
 
       if (error) throw error;
 
       toast({
         title: "تم الحجز بنجاح",
-        description: "تم حجز مقعدك في الرحلة",
+        description: `تم حجز ${selectedSeats} ${selectedSeats === 1 ? 'مقعد' : 'مقاعد'} في الرحلة`,
       });
 
       // Refresh user data and search results
@@ -384,13 +399,79 @@ export default function Home() {
                               مكتمل
                             </Badge>
                           ) : (
-                            <Button 
-                              variant="moroccan" 
-                              className="font-arabic"
-                              onClick={() => bookTrip(trip.id)}
-                            >
-                              احجز الآن
-                            </Button>
+                            <Dialog open={bookingDialogOpen === trip.id} onOpenChange={(open) => setBookingDialogOpen(open ? trip.id : null)}>
+                              <DialogTrigger asChild>
+                                <Button 
+                                  variant="moroccan" 
+                                  className="font-arabic"
+                                >
+                                  احجز الآن
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="sm:max-w-md">
+                                <DialogHeader>
+                                  <DialogTitle className="font-arabic text-center">
+                                    حجز مقاعد الرحلة
+                                  </DialogTitle>
+                                </DialogHeader>
+                                <div className="space-y-4">
+                                  <div className="text-center space-y-2">
+                                    <p className="font-arabic text-sm text-muted-foreground">
+                                      {trip.from_location} ← {trip.to_location}
+                                    </p>
+                                    <p className="font-arabic text-lg font-semibold">
+                                      {trip.price_per_seat} درهم للمقعد
+                                    </p>
+                                  </div>
+                                  
+                                  <div className="space-y-2">
+                                    <Label className="font-arabic">عدد المقاعد</Label>
+                                    <Select 
+                                      value={selectedSeats[trip.id]?.toString() || "1"} 
+                                      onValueChange={(value) => setSelectedSeats(prev => ({...prev, [trip.id]: parseInt(value)}))}
+                                    >
+                                      <SelectTrigger className="font-arabic">
+                                        <SelectValue placeholder="اختر عدد المقاعد" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {Array.from({length: Math.min(trip.available_seats, 4)}, (_, i) => (
+                                          <SelectItem key={i + 1} value={(i + 1).toString()} className="font-arabic">
+                                            {i + 1} {i === 0 ? 'مقعد' : 'مقاعد'}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  
+                                  <div className="text-center p-3 bg-muted rounded-lg">
+                                    <p className="font-arabic text-sm text-muted-foreground">إجمالي السعر</p>
+                                    <p className="font-arabic text-xl font-bold text-primary">
+                                      {(selectedSeats[trip.id] || 1) * trip.price_per_seat} درهم
+                                    </p>
+                                  </div>
+                                  
+                                  <div className="flex gap-2">
+                                    <Button 
+                                      variant="outline" 
+                                      className="flex-1 font-arabic"
+                                      onClick={() => setBookingDialogOpen(null)}
+                                    >
+                                      إلغاء
+                                    </Button>
+                                    <Button 
+                                      variant="moroccan" 
+                                      className="flex-1 font-arabic"
+                                      onClick={() => {
+                                        bookTrip(trip.id, selectedSeats[trip.id] || 1);
+                                        setBookingDialogOpen(null);
+                                      }}
+                                    >
+                                      تأكيد الحجز
+                                    </Button>
+                                  </div>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
                           )}
                         </div>
                       </div>

@@ -280,20 +280,28 @@ const LocationMap: React.FC<LocationMapProps> = ({ tripId, isDriver, driverName,
         className="h-96 w-full rounded-lg overflow-hidden border"
       />
 
-      <div className="text-sm text-muted-foreground">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+          <h5 className="font-arabic font-semibold">مفتاح الخريطة</h5>
+        </div>
+        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-            <span>السائق</span>
+            <span className="font-arabic">🚗 السائق</span>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-            <span>الزبون</span>
+            <span className="font-arabic">👤 الزبون</span>
           </div>
         </div>
         {!driverLocation && (
-          <p className="mt-2 text-amber-600">
-            لم يتم تفعيل تتبع موقع السائق بعد
+          <p className="mt-2 text-amber-600 text-sm font-arabic">
+            ⏳ لم يتم تفعيل تتبع موقع السائق بعد
+          </p>
+        )}
+        {driverLocation && (
+          <p className="mt-2 text-green-600 text-sm font-arabic">
+            ✅ تتبع الموقع المباشر نشط
           </p>
         )}
       </div>
