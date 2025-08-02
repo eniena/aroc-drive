@@ -228,20 +228,27 @@ const LocationMap: React.FC<LocationMapProps> = ({ tripId, isDriver, driverName,
 
     // Initial load of driver location
     const loadDriverLocation = async () => {
-      const { data } = await supabase
-        .from('driver_locations')
-        .select('latitude, longitude, updated_at')
-        .eq('trip_id', tripId)
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .single();
+      try {
+        const { data, error } = await supabase
+          .from('driver_locations')
+          .select('latitude, longitude, updated_at')
+          .eq('trip_id', tripId)
+          .order('updated_at', { ascending: false })
+          .limit(1);
 
-      if (data) {
-        setDriverLocation({
-          latitude: Number(data.latitude),
-          longitude: Number(data.longitude),
-          updated_at: data.updated_at,
-        });
+        if (data && data.length > 0) {
+          setDriverLocation({
+            latitude: Number(data[0].latitude),
+            longitude: Number(data[0].longitude),
+            updated_at: data[0].updated_at,
+          });
+        }
+        
+        if (error) {
+          console.error('Error fetching driver location:', error);
+        }
+      } catch (error) {
+        console.error('Error in loadDriverLocation:', error);
       }
     };
 
