@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Car, MapPin, Calendar, Clock, Users, DollarSign, Plus, Edit, Trash2, Map } from 'lucide-react';
 import LocationMap from '@/components/LocationMap';
 import { supabase } from '@/integrations/supabase/client';
@@ -69,6 +70,31 @@ export default function MyTrips() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const updateTripStatus = async (tripId: string, newStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('trips')
+        .update({ status: newStatus })
+        .eq('id', tripId);
+
+      if (error) throw error;
+
+      toast({
+        title: "تم تحديث حالة الرحلة",
+        description: `تم تغيير الحالة إلى ${newStatus === 'en cours' ? 'جارية' : newStatus}`,
+      });
+
+      // Refresh the trips list
+      fetchMyTrips();
+    } catch (error: any) {
+      toast({
+        title: "خطأ في تحديث الحالة",
+        description: error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -203,6 +229,14 @@ export default function MyTrips() {
                                 منتهية
                               </Badge>
                             )}
+                            {trip.status && (
+                              <Badge 
+                                variant={trip.status === 'en cours' ? 'default' : 'outline'} 
+                                className="font-arabic"
+                              >
+                                {trip.status === 'en cours' ? 'جارية' : trip.status}
+                              </Badge>
+                            )}
                           </div>
                           
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm text-muted-foreground">
@@ -245,7 +279,27 @@ export default function MyTrips() {
                           )}
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                          {!isExpired && (
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-arabic">حالة الرحلة:</span>
+                              <Select
+                                value={trip.status || 'reserved'}
+                                onValueChange={(value) => updateTripStatus(trip.id, value)}
+                              >
+                                <SelectTrigger className="w-32">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="reserved" className="font-arabic">محجوزة</SelectItem>
+                                  <SelectItem value="en cours" className="font-arabic">جارية</SelectItem>
+                                  <SelectItem value="completed" className="font-arabic">مكتملة</SelectItem>
+                                  <SelectItem value="cancelled" className="font-arabic">ملغية</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
+                          
                           {isOngoingTrip(trip) && (
                             <Button
                               variant="outline"
@@ -257,25 +311,28 @@ export default function MyTrips() {
                               {showLocationMap === trip.id ? 'إخفاء الخريطة' : 'عرض الخريطة'}
                             </Button>
                           )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => navigate(`/edit-trip/${trip.id}`)}
-                            className="font-arabic"
-                            disabled={isExpired}
-                          >
-                            <Edit className="mr-2 h-4 w-4" />
-                            تعديل
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => deleteTrip(trip.id)}
-                            className="font-arabic"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            حذف
-                          </Button>
+                          
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => navigate(`/edit-trip/${trip.id}`)}
+                              className="font-arabic"
+                              disabled={isExpired}
+                            >
+                              <Edit className="mr-2 h-4 w-4" />
+                              تعديل
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => deleteTrip(trip.id)}
+                              className="font-arabic"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              حذف
+                            </Button>
+                          </div>
                         </div>
                       </div>
                       
